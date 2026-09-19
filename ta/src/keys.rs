@@ -509,19 +509,47 @@ impl crate::KeyMintTa {
                             ))
                         }
                     };
-                    // Depending on what's going to be signed, allow the implementation to switch
-                    // between EC and RSA signing keys if it so chooses.
-                    let algo_hint = match &keyblob.key_material {
+                    // Prefer matching algorithm (RSA key → RSA batch, EC key → EC batch).
+                    // RKP factory/remote keyboxes often only ship ECDSA; fall back so
+                    // RSA application keys can still be attested with the EC batch key.
+                    let preferred = match &keyblob.key_material {
                         crypto::KeyMaterial::Rsa(_) => device::SigningAlgorithm::Rsa,
                         crypto::KeyMaterial::Ec(_, _, _) => device::SigningAlgorithm::Ec,
                         crypto::KeyMaterial::MlDsa(_, _) => device::SigningAlgorithm::Ec,
                         _ => return Err(km_err!(InvalidArgument, "unexpected key type!")),
                     };
+                    let fallback = match preferred {
+                        device::SigningAlgorithm::Rsa => device::SigningAlgorithm::Ec,
+                        device::SigningAlgorithm::Ec => device::SigningAlgorithm::Rsa,
+                    };
 
-                    let mut info = self.get_signing_info(device::SigningKeyType {
+                    let mut info = match self.get_signing_info(device::SigningKeyType {
                         which: which_key,
-                        algo_hint,
-                    })?;
+                        algo_hint: preferred,
+                    }) {
+                        Ok(info) => info,
+                        Err(first_err) => {
+                            log::info!(
+                                "preferred {:?} attestation key unavailable ({first_err:?}); trying {:?}",
+                                preferred,
+                                fallback
+                            );
+                            self.get_signing_info(device::SigningKeyType {
+                                which: which_key,
+                                algo_hint: fallback,
+                            })
+                            .map_err(|second_err| {
+                                km_err!(
+                                    AttestationKeysNotProvisioned,
+                                    "no usable batch attestation key (preferred {:?}: {:?}; fallback {:?}: {:?})",
+                                    preferred,
+                                    first_err,
+                                    fallback,
+                                    second_err
+                                )
+                            })?
+                        }
+                    };
                     info.attestation_info = attestation_info;
                     Some(info)
                 }

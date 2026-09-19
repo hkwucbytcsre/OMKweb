@@ -34,9 +34,81 @@ pub(crate) fn strongbox_keymint_present() -> bool {
     *STRONGBOX_PRESENT.get_or_init(detect_strongbox_keymint_present)
 }
 
-pub(crate) fn resolve_hardware_profile(security_level: SecurityLevel) -> KeyMintHardwareProfile {
-    let version_number = probe_keymint_version_from_vintf(security_level)
-        .unwrap_or_else(fallback_keymint_version_from_android);
+pub(crate) fn resolve_hardware_profile(
+    security_level: SecurityLevel,
+) -> KeyMintHardwareProfile {
+    let version_number = match probe_keymint_version_from_vintf(security_level) {
+        Some(version) => {
+            log::info!(
+                "KeyMint version probe: VINTF probe succeeded, using VINTF version = {}",
+                version
+            );
+            version
+        }
+        None => {
+            log::warn!(
+                "KeyMint version probe: VINTF probe failed, \
+                 trying system KeyMint getHardwareInfo()"
+            );
+
+            match probe_system_keymint_hardware_info(security_level) {
+                Ok(info) => {
+                    log::info!(
+                        "KeyMint version probe: system KeyMint getHardwareInfo() succeeded"
+                    );
+                    log::info!(
+                        "KeyMint version probe: system versionNumber = {}",
+                        info.versionNumber
+                    );
+                    log::info!(
+                        "KeyMint version probe: system keyMintName = {:?}",
+                        info.keyMintName
+                    );
+                    log::info!(
+                        "KeyMint version probe: system keyMintAuthorName = {:?}",
+                        info.keyMintAuthorName
+                    );
+
+                    match normalize_keymint_version(info.versionNumber) {
+                        Some(version) => {
+                            log::info!(
+                                "KeyMint version probe: using system KeyMint versionNumber = {}",
+                                version
+                            );
+                            version
+                        }
+                        None => {
+                            log::warn!(
+                                "KeyMint version probe: system KeyMint returned \
+                                 invalid versionNumber = {}, falling back to \
+                                 KEYMINT_V1 = {}",
+                                info.versionNumber,
+                                KEYMINT_V1
+                            );
+                            KEYMINT_V1
+                        }
+                    }
+                }
+                Err(error) => {
+                    log::warn!(
+                        "KeyMint version probe: system KeyMint getHardwareInfo() \
+                         failed: {error:#}"
+                    );
+                    log::warn!(
+                        "KeyMint version probe: VINTF and system KeyMint probes \
+                         both failed, falling back to KEYMINT_V1 = {}",
+                        KEYMINT_V1
+                    );
+                    KEYMINT_V1
+                }
+            }
+        }
+    };
+
+    log::info!(
+        "KeyMint version probe: final version_number = {}",
+        version_number
+    );
 
     if let Some(profile) = resolve_property_profile_with(
         security_level,
@@ -46,9 +118,9 @@ pub(crate) fn resolve_hardware_profile(security_level: SecurityLevel) -> KeyMint
         return profile;
     }
 
-    match probe_system_keymint_hardware_info(security_level)
-        .and_then(|info| profile_from_system_hardware_info(&info, security_level, version_number))
-    {
+    match probe_system_keymint_hardware_info(security_level).and_then(|info| {
+        profile_from_system_hardware_info(&info, security_level, version_number)
+    }) {
         Ok(profile) => profile,
         Err(error) => {
             log::warn!("failed to resolve dynamic KeyMint hardware profile: {error:#}");
@@ -265,17 +337,6 @@ fn keymint_instance_declared_in_vintf(security_level: SecurityLevel) -> bool {
             log::warn!("failed to resolve KeyMint instance from VINTF: {error:#}");
             false
         }
-    }
-}
-
-fn fallback_keymint_version_from_android() -> i32 {
-    match kmr_common::android_version::android_major_version() {
-        Some(version) if version >= 17 => KEYMINT_V5,
-        Some(16) => KEYMINT_V4,
-        Some(14 | 15) => KEYMINT_V3,
-        Some(13) => KEYMINT_V2,
-        Some(12) => KEYMINT_V1,
-        _ => KEYMINT_V4,
     }
 }
 
