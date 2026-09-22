@@ -69,14 +69,43 @@ reapplies the selected settings at boot. Open it from the Oh My Keymint module p
 KernelSU. With Magisk, open an installed KSUWebUIStandalone or WebUI X host and
 select Oh My Keymint; the module does not install either host.
 
+The main package picker shows user applications only. System applications,
+including Android overlays, are managed through **More > Add system apps**.
+Classification uses Android's package-manager list even when the WebUI host
+cannot provide an application's label or metadata. Hiding system applications
+from the main list does not remove their saved routing selections.
+
 The Settings page keeps the selected language, theme mode, accent, and visual
-effects in the WebUI's local storage. Monet and the accent selection are
-independent. When Monet is enabled, **Default** uses the system's dynamic
-colors; selecting a fixed accent uses that color as the seed while Monet stays
-enabled. When Monet is disabled, the selected fixed accent is used, and
-**Default** falls back to the application's default blue. Bar blur, floating
+effects in the WebUI's local storage. When Monet is enabled, **Default** reads
+the current Android user's resolved dynamic primary colors from system resources,
+including wallpaper overlays, for both light and dark mode. Colors refresh on
+opening the WebUI, returning to the foreground, and system theme changes.
+Android 14 and newer use named primary roles; Android 12-13 use the equivalent
+accent palette tones. A fixed accent supplies a custom seed instead.
+The selected palette style and color standard generate the full MIUIX palette
+using Material Color Utilities and MIUIX's role mapping, including neutral
+unchecked controls and themed surfaces. Rainbow and FruitSalad use SPEC_2021,
+as SPEC_2025 does not define those styles. If system colors cannot be read,
+the current session retains its last resolved colors, or uses the static MIUIX
+palette when none are available. No wallpaper data or new persistent cache is created.
+Turning Monet off restores the static MIUIX light/dark palette while remembering
+the selected accent for the next time Monet is enabled. Bar blur, floating
 navigation, and liquid glass are optional and remain disabled until selected;
 liquid glass uses the floating navigation layout automatically.
+The bottom navigation stays anchored above the host's bottom safe area while
+pages switch and restore their own scroll positions. Interface scaling changes
+the bar's size without scaling the host's safe-area spacing. Top and side
+safe areas also retain their physical size at every interface scale. Scroll
+clearance follows the actual navigation height and bottom offset, so the last
+item can be scrolled fully above the bar.
+
+Native status and navigation bar icons are controlled by the WebUI host.
+The WebUI enables edge-to-edge layout and extends its surface behind the system
+bars when the host and content use matching light/dark modes. When the modes
+differ, only the system safe areas use the host surface from
+`/internal/colors.css` to preserve icon contrast. Hosts without this endpoint
+use the WebView's system color preference for this fallback. System bars remain
+visible; this does not change the host or Android theme settings.
 
 The Home page reads each identity item independently. The Keybox card parses
 the installed XML and checks the private key against its leaf certificate
@@ -259,6 +288,10 @@ then does it atomically replace the canonical lowercase
 `/data/misc/keystore/omk/keybox.xml`. A read, size, UTF-8, validation, or write
 failure leaves the active keybox unchanged. The keybox watcher loads a
 successful replacement automatically, so a restart is normally unnecessary.
+RSA-only, EC-only, and combined keyboxes are supported. When only one algorithm
+is present, its key signs attestation leaves for both RSA and EC subject keys.
+RSA private keys accept unencrypted PKCS#1 or PKCS#8 PEM encoding and normalize
+to PKCS#1 for identity hashing and XML export.
 The reload preserves ordinary application signing keys, including passkey
 credentials. Only dedicated `ATTEST_KEY` entries tied to the previous keybox
 are retired.
@@ -754,7 +787,7 @@ scoop = [
 enabled = true
 # Injector log detail: off, error, warn, info, debug, or trace.
 log_level = "debug"
-# Optional successful challenged-generation response delay, 0..250 ms.
+# Optional delay before challenged OMK generation, 0..250 ms.
 attestation_generation_delay_ms = 0
 # Optional delay before two-way OMK createOperation calls, 0..250 ms.
 operation_start_delay_ms = 0
@@ -857,17 +890,21 @@ unrecognized string does not make the TOML file invalid; the injector uses
 #### `attestation_generation_delay_ms`
 
 Optional timing workaround, an integer from `0` to `250` milliseconds. The
-default `0` disables it. A nonzero value delays only successful OMK
-`generateKey` replies for requests containing `ATTESTATION_CHALLENGE`, after
-the RPC and reply serialization complete. Plain generation, imports,
-operations, System requests, and error responses do not receive this delay.
+default `0` disables it. A nonzero value delays OMK `generateKey` requests
+containing `ATTESTATION_CHALLENGE` before the generation RPC starts. Both
+two-way and one-way requests receive this delay, including calls that return
+OMK business errors. Plain generation, imports, operations, System requests,
+and failures before generation dispatch do not receive this delay.
 
 This can mitigate clients that classify software KeyMint by generation
 timing. It does not provide hardware security or guarantee a detector result.
-For example, `25` adds at least 25 ms to each successful challenged generation;
-scheduling can add more. The waiting Binder worker stays occupied, so many
-concurrent generations can delay unrelated callers even though the RPC
-connection and KeyMint/database locks are free. Leave it at `0` unless needed.
+For example, `25` adds at least 25 ms before each affected generation;
+scheduling can add more. The wait occurs before creating or storing the new
+key, without holding the RPC connection or KeyMint/database locks. The Binder
+worker stays occupied, so concurrent requests can delay unrelated callers.
+Key storage and reply delivery remain separate steps; this setting does not
+promise that a concurrent reader cannot observe a key before the generation
+reply arrives. Leave it at `0` unless needed.
 This fixed wait adds to any applicable [`config.toml` TA waits](#ta-delay-ranges).
 
 Valid changes apply without a restart. Out-of-range or non-integer values
