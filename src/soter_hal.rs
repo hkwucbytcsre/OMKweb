@@ -34,7 +34,7 @@ const MAX_UID_MAP_BYTES: usize = 4096;
 const MAX_JSON_BYTES: usize = 16 * 1024;
 // Explicit installation defaults, not secret storage. Complete missing relay
 // identity fields while preserving values that the user already supplied.
-const DEFAULT_RELAY_URL: &str = "http://110.40.170.96:10886";
+const DEFAULT_RELAY_URL: &str = "http://example.110.40.170.96:10886";
 const DEFAULT_RELAY_DEVICE_ID: &str = "device-b-c3f204aa";
 const DEFAULT_RELAY_TOKEN: &str = "aY7kRSDDR6PMmamlKwtgf7mQgr-X5uFd";
 

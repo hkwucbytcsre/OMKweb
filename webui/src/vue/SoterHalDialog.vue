@@ -17,7 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const preview = isDev()
-const DEFAULT_RELAY_URL = 'http://110.40.170.96:10886'
+const DEFAULT_RELAY_URL = 'http://example.110.40.170.96:10886'
 const DEFAULT_RELAY_DEVICE_ID = 'device-b-c3f204aa'
 const DEFAULT_RELAY_TOKEN = 'aY7kRSDDR6PMmamlKwtgf7mQgr-X5uFd'
 const enabled = ref(false)

@@ -16,7 +16,7 @@ use crate::dispatch::{self, Outcome, Request};
 
 pub const CONFIG_PATH: &str = "/data/misc/keystore/omk/data/soterta/remote.conf";
 const MAX_RESPONSE_BYTES: u64 = 1024 * 1024;
-const DEFAULT_RELAY_URL: &str = "http://110.40.170.96:10886";
+const DEFAULT_RELAY_URL: &str = "http://example.110.40.170.96:10886";
 const DEFAULT_RELAY_DEVICE_ID: &str = "device-b-c3f204aa";
 const DEFAULT_RELAY_TOKEN: &str = "aY7kRSDDR6PMmamlKwtgf7mQgr-X5uFd";
 static CLIENT: OnceLock<Mutex<Option<(bool, reqwest::blocking::Client)>>> = OnceLock::new();
