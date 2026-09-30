@@ -71,37 +71,24 @@ same schema and serial validation used for live checks. The snapshot contains
 only Google's public `REVOKED`/`SUSPENDED` entries; it does not contain private
 keys or device identifiers.
 
-## Specter interface and ADB Disabler reference
+## Specter interface reference
 
-The WebUI information architecture and ADB Disabler workflow were checked against
+The WebUI information architecture was checked against
 [dpejoh/specter](https://github.com/dpejoh/specter) commit
 [`829c4fa95ab5a08e4cd7e18dd686e73896d90a24`](https://github.com/dpejoh/specter/commit/829c4fa95ab5a08e4cd7e18dd686e73896d90a24).
 That project is licensed under GPL-3.0. Oh My Keymint does not include or run
 Specter's WebUI or shell scripts. Its WebUI and Rust implementation are
-independent; they reproduce only the documented ADB Disabler settings.
+independent.
 
-The ADB Disabler action follows Specter's documented settings: it independently
-controls developer options, USB debugging, and OEM unlock, persists four strict
-0/1 values under OMK's data directory, and reapplies the selected properties at
-boot. It does not bundle Specter's shell scripts.
+## Qualcomm Soter software TA
 
-## D-soter compatibility experiment
-
-The optional Tencent Soter compatibility (Beta) reply contract and public-key
-placeholder are adapted from [ajfkdk/D-soter](https://github.com/ajfkdk/D-soter),
-`module/jni/dsoter.cpp` at commit
-[`6148e02ea5977cb95b5a162a405fc915e39c01db`](https://github.com/ajfkdk/D-soter/commit/6148e02ea5977cb95b5a162a405fc915e39c01db),
-licensed under Apache-2.0. The Rust implementation in `pif-spoof/src/soter.rs`
-and `pif-spoof/src/soter/` implements all 13 reply contracts with a separate
-native Binder stub and bounded descriptor matching. Android 12/12L retain the
-NDK platform's standard AIDL header check. No upstream prebuilt library or C++
-runtime component is bundled.
-It shares only the existing Zygisk loader entry with PIF and does not alter
-KeyMint or injector routing. The fixed public key and zero-filled signatures
-are mock responses, not genuine attestation or payment credentials.
-
-The release includes this attribution in `THIRD_PARTY_LICENSES/D-soter.txt` and
-the Apache-2.0 terms in `AOSP.Apache-license-2.0.txt`.
+The Qualcomm Soter HAL software TA and Binder service are adapted from the
+`soter-ta` and `soterta-svc` components of
+[Andrea-lyz/ommega](https://github.com/Andrea-lyz/ommega), licensed under
+AGPL-3.0-or-later. The service is isolated behind
+`vendor.qti.hardware.soter.ISoter/default`, uses OMK's persistent data path,
+and retains the upstream remote-relay contract. It does not replace the OMK
+KeyMint route.
 
 ## Native HTTPS client
 

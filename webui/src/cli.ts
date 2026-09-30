@@ -15,6 +15,7 @@ const KEYBOX_BASE64_CHUNK_BYTES = 48 * 1024
 const MAX_BULLETIN_BYTES = 2 * 1024 * 1024
 const MAX_PIF_CATALOG_BYTES = 64 * 1024
 const MAX_PIF_STATE_BYTES = 2 * 1024
+const MAX_SOTER_HAL_JSON_BYTES = 16 * 1024
 const MAX_PIF_DEVICES = 64
 const MAX_PIF_MODEL_LENGTH = 128
 const MAX_PIF_PRODUCT_LENGTH = 128
@@ -32,7 +33,7 @@ const ACTIVITY_ACTIONS = [
   'security_patch_restored',
   'pif_enabled',
   'pif_disabled',
-  'adb_disabler_changed',
+  'adb_disabler_changed', // Read-only compatibility for existing activity records.
 ] as const
 export type ActivityAction = typeof ACTIVITY_ACTIONS[number]
 
@@ -63,14 +64,14 @@ export type PifFingerprintState = {
 
 export type KeyboxSource = 'google_hardware' | 'google_remote' | 'unknown'
 export type KeyboxLevel = 'tee' | 'strongbox' | 'unknown'
-export interface AdbDisablerState {
+/** Configuration for the Qualcomm Soter HAL relay. */
+export interface SoterHalState {
   enabled: boolean
-  dev_options: boolean
-  usb_debug: boolean
-  oem_unlock: boolean
-}
-export interface SoterBetaState {
-  enabled: boolean
+  url: string
+  token: string
+  device_id: string
+  tls_insecure: boolean
+  uid_map: string
 }
 export type PlayIntegrityStatus = 'not_checked'
 export type KeyboxRevocationStatus =
@@ -315,55 +316,39 @@ export class Cli {
     return output
   }
 
-  /** Apply ADB Disabler options and persist them for the next boot. */
-  async setAdbDisabler(
-    enabled: boolean,
-    devOptions: boolean,
-    usbDebug: boolean,
-    oemUnlock: boolean,
-  ): Promise<void> {
+  async getSoterHal(): Promise<SoterHalState> {
     const { keymint } = await this.#getHelperPaths()
-    const values = [enabled, devOptions, usbDebug, oemUnlock].map(value => value ? '1' : '0')
-    const output = await this.#run(keymint, ['--webui-set-adb-disabler', ...values], 256)
-    if (output !== 'adb_disabler_applied') {
-      throw new Error('OMK returned an unexpected ADB Disabler result')
-    }
-    await this.#recordActivity('adb_disabler_changed', enabled ? 'enabled' : 'disabled')
-  }
-
-  async getAdbDisabler(): Promise<AdbDisablerState> {
-    const { keymint } = await this.#getHelperPaths()
-    const output = await this.#run(keymint, ['--webui-get-adb-disabler'], 256)
-    let parsed: unknown
-    try { parsed = JSON.parse(output) } catch { throw new Error('OMK returned invalid ADB Disabler state') }
+    const output = await this.#run(keymint, ['--webui-get-soter-hal'], MAX_SOTER_HAL_JSON_BYTES + 1)
+    const parsed = parseCanonicalJson(output, 'Soter HAL state')
     if (!isRecord(parsed)
-        || !hasOnlyKeys(parsed, ['enabled', 'dev_options', 'usb_debug', 'oem_unlock'])
+        || !hasOnlyKeys(parsed, ['enabled', 'url', 'token', 'device_id', 'tls_insecure', 'uid_map'])
         || typeof parsed.enabled !== 'boolean'
-        || typeof parsed.dev_options !== 'boolean'
-        || typeof parsed.usb_debug !== 'boolean'
-        || typeof parsed.oem_unlock !== 'boolean') {
-      throw new Error('OMK returned invalid ADB Disabler state')
+        || typeof parsed.url !== 'string'
+        || typeof parsed.token !== 'string'
+        || typeof parsed.device_id !== 'string'
+        || typeof parsed.tls_insecure !== 'boolean'
+        || typeof parsed.uid_map !== 'string') {
+      throw new Error('OMK returned invalid Soter HAL state')
     }
-    return parsed as unknown as AdbDisablerState
+    return parsed as unknown as SoterHalState
   }
 
-  async getSoterBeta(): Promise<SoterBetaState> {
+  async setSoterHal(state: SoterHalState): Promise<void> {
     const { keymint } = await this.#getHelperPaths()
-    const output = await this.#run(keymint, ['--webui-get-soter-beta'], 256)
-    const parsed = parseCanonicalJson(output, 'Soter Beta state')
-    if (!isRecord(parsed)
-        || !hasOnlyKeys(parsed, ['enabled'])
-        || typeof parsed.enabled !== 'boolean') {
-      throw new Error('OMK returned invalid Soter Beta state')
+    const json = JSON.stringify(state)
+    if (new TextEncoder().encode(json).byteLength > MAX_SOTER_HAL_JSON_BYTES) {
+      throw new Error('Soter HAL configuration exceeds the byte limit')
     }
-    return { enabled: parsed.enabled }
-  }
-
-  async setSoterBeta(enabled: boolean): Promise<void> {
-    const { keymint } = await this.#getHelperPaths()
-    const output = await this.#run(keymint, ['--webui-set-soter-beta', enabled ? '1' : '0'], 256)
-    if (output !== 'soter_beta_saved') {
-      throw new Error('OMK returned an unexpected Soter Beta result')
+    // KernelSU runs spawn arguments through a shell. Encode structured data
+    // just like the package-list and activity helpers so JSON stays one arg.
+    const payload = encodeBase64Utf8(json)
+    const output = await this.#run(keymint, ['--webui-set-soter-hal-base64', payload], 256)
+    if (output !== 'soter_hal_saved') {
+      throw new Error('OMK returned an unexpected Soter HAL result')
+    }
+    const persisted = await this.getSoterHal()
+    if (JSON.stringify(persisted) !== json) {
+      throw new Error('Soter HAL configuration read-back did not match the saved values')
     }
   }
 

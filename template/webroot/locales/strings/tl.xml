@@ -114,16 +114,6 @@
     <string name="tools_key_management">Pamamahala ng key</string>
     <string name="tools_keybox_desc">Pumili ng XML file upang palitan ang kasalukuyang Keybox</string>
     <string name="tools_adb_disabler">ADB Disabler</string>
-    <string name="tools_adb_disabler_desc">Disable developer options, USB debugging and OEM unlock at boot.</string>
-    <string name="adb_disabler_desc">Choose which security related developer settings to disable when the module starts.</string>
-    <string name="adb_disabler_enabled">Enable ADB Disabler</string>
-    <string name="adb_disabler_enabled_desc">Apply the selected switches now and again after every boot.</string>
-    <string name="adb_disabler_dev_options">Developer options</string>
-    <string name="adb_disabler_dev_options_desc">Hide developer options and debug build properties.</string>
-    <string name="adb_disabler_usb_debug">USB debugging</string>
-    <string name="adb_disabler_usb_debug_desc">Turn off Android USB debugging and keep USB mode on file transfer.</string>
-    <string name="adb_disabler_oem_unlock">OEM unlocking</string>
-    <string name="adb_disabler_oem_unlock_desc">Prevent OEM unlocking from being enabled by Android settings.</string>
     <string name="prompt_adb_disabler_applied">ADB Disabler settings applied. Some changes take effect after reboot.</string>
     <string name="prompt_adb_disabler_disabled">ADB Disabler disabled. Existing changes remain until the device state is changed.</string>
     <string name="tools_security_patch">Mga setting ng security patch</string>
@@ -169,12 +159,4 @@
     <string name="settings_floating_bottom_bar_desc">Ipakita ang navigation bilang lumulutang na panel</string>
     <string name="settings_liquid_glass">Liquid glass</string>
     <string name="settings_liquid_glass_desc">Magdagdag ng translucent na lalim ng salamin sa mga surface</string>
-    <string name="tools_soter_beta">Pagiging tugma sa Tencent Soter (Beta)</string>
-    <string name="tools_soter_beta_desc">Eksperimental na pagiging tugma sa Tencent SoterServer. Kailangan ang Zygisk Next.</string>
-    <string name="soter_beta_warning">Beta simulation lamang: nagbabalik ng nakapirming public key at mga lagdang puno ng zero. Hindi ito tunay na TEE attestation at hindi nito inaayos ang mga pagbabayad o cryptographic signature. Para lamang sa Tencent SoterServer, hindi sa KeyMint.</string>
-    <string name="soter_beta_enabled">Paganahin ang pagiging tugma sa Soter</string>
-    <string name="soter_beta_enabled_desc">Naka-off bilang default. Mase-save lamang ang mga pagbabago pagkatapos pindutin ang Ilapat.</string>
-    <string name="soter_beta_reboot">Hiwalay na i-install at paganahin ang Zygisk Next. I-restart ang device pagkatapos itong i-on o i-off. Hindi pa nabeberipika ang pagiging tugma.</string>
-    <string name="soter_beta_saved">Na-save ang setting ng Soter Beta. I-restart ang device para mailapat. Hindi pa nabeberipika ang pagiging tugma.</string>
-    <string name="soter_beta_preview">Preview lamang. Hindi maaaring i-save ang mga setting ng device dito.</string>
 </resources>

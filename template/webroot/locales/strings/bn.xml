@@ -114,16 +114,6 @@
     <string name="tools_key_management">কী ব্যবস্থাপনা</string>
     <string name="tools_keybox_desc">বর্তমান Keybox প্রতিস্থাপন করতে একটি XML ফাইল নির্বাচন করুন</string>
     <string name="tools_adb_disabler">ADB Disabler</string>
-    <string name="tools_adb_disabler_desc">Disable developer options, USB debugging and OEM unlock at boot.</string>
-    <string name="adb_disabler_desc">Choose which security related developer settings to disable when the module starts.</string>
-    <string name="adb_disabler_enabled">Enable ADB Disabler</string>
-    <string name="adb_disabler_enabled_desc">Apply the selected switches now and again after every boot.</string>
-    <string name="adb_disabler_dev_options">Developer options</string>
-    <string name="adb_disabler_dev_options_desc">Hide developer options and debug build properties.</string>
-    <string name="adb_disabler_usb_debug">USB debugging</string>
-    <string name="adb_disabler_usb_debug_desc">Turn off Android USB debugging and keep USB mode on file transfer.</string>
-    <string name="adb_disabler_oem_unlock">OEM unlocking</string>
-    <string name="adb_disabler_oem_unlock_desc">Prevent OEM unlocking from being enabled by Android settings.</string>
     <string name="prompt_adb_disabler_applied">ADB Disabler settings applied. Some changes take effect after reboot.</string>
     <string name="prompt_adb_disabler_disabled">ADB Disabler disabled. Existing changes remain until the device state is changed.</string>
     <string name="tools_security_patch">নিরাপত্তা প্যাচ সেটিংস</string>
@@ -169,12 +159,4 @@
     <string name="settings_floating_bottom_bar_desc">নেভিগেশন বারটি ভাসমান প্যানেল হিসেবে দেখান</string>
     <string name="settings_liquid_glass">লিকুইড গ্লাস</string>
     <string name="settings_liquid_glass_desc">পৃষ্ঠগুলোতে স্বচ্ছ কাচের গভীরতা যোগ করুন</string>
-    <string name="tools_soter_beta">Tencent Soter সামঞ্জস্য (বেটা)</string>
-    <string name="tools_soter_beta_desc">Tencent SoterServer-এর জন্য পরীক্ষামূলক সামঞ্জস্য। Zygisk Next প্রয়োজন।</string>
-    <string name="soter_beta_warning">শুধু বেটা সিমুলেশন: একটি স্থির পাবলিক কী এবং শূন্য দিয়ে পূর্ণ স্বাক্ষর ফেরত দেয়। এটি প্রকৃত TEE প্রত্যয়ন নয় এবং পেমেন্ট বা ক্রিপ্টোগ্রাফিক স্বাক্ষর মেরামত করে না। শুধু Tencent SoterServer-এর ক্ষেত্রে প্রযোজ্য, KeyMint-এর ক্ষেত্রে নয়।</string>
-    <string name="soter_beta_enabled">Soter সামঞ্জস্য চালু করুন</string>
-    <string name="soter_beta_enabled_desc">ডিফল্টভাবে বন্ধ। প্রয়োগ করুন চাপার পরেই পরিবর্তন সংরক্ষিত হবে।</string>
-    <string name="soter_beta_reboot">Zygisk Next আলাদাভাবে ইনস্টল ও চালু করুন। চালু বা বন্ধ করার পরে ডিভাইস পুনরায় চালু করুন। সামঞ্জস্য যাচাই করা হয়নি।</string>
-    <string name="soter_beta_saved">Soter বেটা সেটিং সংরক্ষিত হয়েছে। প্রয়োগ করতে ডিভাইস পুনরায় চালু করুন। সামঞ্জস্য যাচাই করা হয়নি।</string>
-    <string name="soter_beta_preview">শুধু প্রিভিউ। এখানে ডিভাইসের সেটিং সংরক্ষণ করা যাবে না।</string>
 </resources>

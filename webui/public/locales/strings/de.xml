@@ -114,16 +114,6 @@
     <string name="tools_key_management">Schlüsselverwaltung</string>
     <string name="tools_keybox_desc">XML-Datei auswählen, um die aktuelle Keybox zu ersetzen</string>
     <string name="tools_adb_disabler">ADB Disabler</string>
-    <string name="tools_adb_disabler_desc">Disable developer options, USB debugging and OEM unlock at boot.</string>
-    <string name="adb_disabler_desc">Choose which security related developer settings to disable when the module starts.</string>
-    <string name="adb_disabler_enabled">Enable ADB Disabler</string>
-    <string name="adb_disabler_enabled_desc">Apply the selected switches now and again after every boot.</string>
-    <string name="adb_disabler_dev_options">Developer options</string>
-    <string name="adb_disabler_dev_options_desc">Hide developer options and debug build properties.</string>
-    <string name="adb_disabler_usb_debug">USB debugging</string>
-    <string name="adb_disabler_usb_debug_desc">Turn off Android USB debugging and keep USB mode on file transfer.</string>
-    <string name="adb_disabler_oem_unlock">OEM unlocking</string>
-    <string name="adb_disabler_oem_unlock_desc">Prevent OEM unlocking from being enabled by Android settings.</string>
     <string name="prompt_adb_disabler_applied">ADB Disabler settings applied. Some changes take effect after reboot.</string>
     <string name="prompt_adb_disabler_disabled">ADB Disabler disabled. Existing changes remain until the device state is changed.</string>
     <string name="tools_security_patch">Sicherheitspatch-Einstellungen</string>
@@ -169,12 +159,4 @@
     <string name="settings_floating_bottom_bar_desc">Navigation als schwebende Leiste anzeigen</string>
     <string name="settings_liquid_glass">Flüssigglas</string>
     <string name="settings_liquid_glass_desc">Oberflächen einen transparenten Glaseffekt verleihen</string>
-    <string name="tools_soter_beta">Tencent-Soter-Kompatibilität (Beta)</string>
-    <string name="tools_soter_beta_desc">Experimentelle Kompatibilität mit Tencent SoterServer. Erfordert Zygisk Next.</string>
-    <string name="soter_beta_warning">Nur Beta-Simulation: Gibt einen festen öffentlichen Schlüssel und mit Nullen gefüllte Signaturen zurück. Dies ist keine echte TEE-Attestierung und repariert weder Zahlungen noch kryptografische Signaturen. Gilt nur für Tencent SoterServer, nicht für KeyMint.</string>
-    <string name="soter_beta_enabled">Soter-Kompatibilität aktivieren</string>
-    <string name="soter_beta_enabled_desc">Standardmäßig deaktiviert. Änderungen werden erst nach Tippen auf Anwenden gespeichert.</string>
-    <string name="soter_beta_reboot">Zygisk Next separat installieren und aktivieren. Nach dem Aktivieren oder Deaktivieren das Gerät neu starten. Die Kompatibilität wurde nicht bestätigt.</string>
-    <string name="soter_beta_saved">Soter-Beta-Einstellung gespeichert. Das Gerät zum Anwenden neu starten. Die Kompatibilität wurde nicht bestätigt.</string>
-    <string name="soter_beta_preview">Nur Vorschau. Geräteeinstellungen können hier nicht gespeichert werden.</string>
 </resources>

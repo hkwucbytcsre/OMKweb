@@ -114,16 +114,6 @@
     <string name="tools_key_management">إدارة المفاتيح</string>
     <string name="tools_keybox_desc">اختر ملف XML لاستبدال Keybox الحالي</string>
     <string name="tools_adb_disabler">ADB Disabler</string>
-    <string name="tools_adb_disabler_desc">Disable developer options, USB debugging and OEM unlock at boot.</string>
-    <string name="adb_disabler_desc">Choose which security related developer settings to disable when the module starts.</string>
-    <string name="adb_disabler_enabled">Enable ADB Disabler</string>
-    <string name="adb_disabler_enabled_desc">Apply the selected switches now and again after every boot.</string>
-    <string name="adb_disabler_dev_options">Developer options</string>
-    <string name="adb_disabler_dev_options_desc">Hide developer options and debug build properties.</string>
-    <string name="adb_disabler_usb_debug">USB debugging</string>
-    <string name="adb_disabler_usb_debug_desc">Turn off Android USB debugging and keep USB mode on file transfer.</string>
-    <string name="adb_disabler_oem_unlock">OEM unlocking</string>
-    <string name="adb_disabler_oem_unlock_desc">Prevent OEM unlocking from being enabled by Android settings.</string>
     <string name="prompt_adb_disabler_applied">ADB Disabler settings applied. Some changes take effect after reboot.</string>
     <string name="prompt_adb_disabler_disabled">ADB Disabler disabled. Existing changes remain until the device state is changed.</string>
     <string name="tools_security_patch">إعدادات تصحيح الأمان</string>
@@ -169,12 +159,4 @@
     <string name="settings_floating_bottom_bar_desc">عرض شريط التنقل كلوحة عائمة</string>
     <string name="settings_liquid_glass">تأثير الزجاج السائل</string>
     <string name="settings_liquid_glass_desc">إضافة عمق زجاجي شفاف للأسطح</string>
-    <string name="tools_soter_beta">توافق Tencent Soter (تجريبي)</string>
-    <string name="tools_soter_beta_desc">توافق تجريبي مع Tencent SoterServer. يتطلب Zygisk Next.</string>
-    <string name="soter_beta_warning">محاكاة تجريبية فقط: تُرجع مفتاحًا عامًا ثابتًا وتوقيعات مملوءة بالأصفار. ليست مصادقة TEE حقيقية ولا تصلح المدفوعات أو التوقيعات التشفيرية. تنطبق على Tencent SoterServer فقط، وليس KeyMint.</string>
-    <string name="soter_beta_enabled">تفعيل توافق Soter</string>
-    <string name="soter_beta_enabled_desc">معطّل افتراضيًا. لا تُحفظ التغييرات إلا بعد الضغط على تطبيق.</string>
-    <string name="soter_beta_reboot">ثبّت Zygisk Next وفعّله بشكل منفصل. أعد تشغيل الجهاز بعد التفعيل أو التعطيل. لم يتم التحقق من التوافق.</string>
-    <string name="soter_beta_saved">تم حفظ إعداد Soter التجريبي. أعد تشغيل الجهاز للتطبيق. لم يتم التحقق من التوافق.</string>
-    <string name="soter_beta_preview">معاينة فقط. لا يمكن حفظ إعدادات الجهاز هنا.</string>
 </resources>

@@ -114,16 +114,6 @@
     <string name="tools_key_management">金鑰管理</string>
     <string name="tools_keybox_desc">選擇 XML 檔案以取代目前的 Keybox</string>
     <string name="tools_adb_disabler">ADB 停用器</string>
-    <string name="tools_adb_disabler_desc">啟動時停用開發者選項、USB 偵錯和 OEM 解鎖。</string>
-    <string name="adb_disabler_desc">選擇模組啟動時要停用的開發者相關設定。</string>
-    <string name="adb_disabler_enabled">啟用 ADB 停用器</string>
-    <string name="adb_disabler_enabled_desc">立即套用選取的開關，並在每次啟動後重新套用。</string>
-    <string name="adb_disabler_dev_options">開發者選項</string>
-    <string name="adb_disabler_dev_options_desc">隱藏開發者選項並隱藏偵錯版本屬性。</string>
-    <string name="adb_disabler_usb_debug">USB 偵錯</string>
-    <string name="adb_disabler_usb_debug_desc">關閉 Android USB 偵錯，並將 USB 模式保持為檔案傳輸。</string>
-    <string name="adb_disabler_oem_unlock">OEM 解鎖</string>
-    <string name="adb_disabler_oem_unlock_desc">阻止 Android 設定重新啟用 OEM 解鎖。</string>
     <string name="prompt_adb_disabler_applied">ADB 停用器設定已套用，部分變更將在重新啟動後生效。</string>
     <string name="prompt_adb_disabler_disabled">ADB 停用器已停用，目前變更會保留，直到裝置狀態被手動變更。</string>
     <string name="tools_security_patch">設定安全性修補程式</string>
@@ -169,12 +159,4 @@
     <string name="settings_floating_bottom_bar_desc">將導覽列顯示為懸浮面板</string>
     <string name="settings_liquid_glass">液態玻璃</string>
     <string name="settings_liquid_glass_desc">為介面增加半透明玻璃層次</string>
-    <string name="tools_soter_beta">騰訊 Soter 相容（Beta）</string>
-    <string name="tools_soter_beta_desc">騰訊 SoterServer 的實驗性相容功能，需要 Zygisk Next。</string>
-    <string name="soter_beta_warning">僅限 Beta 模擬：傳回固定公鑰與全零簽章，並非真正的 TEE 認證，也無法修復支付或加密簽章。僅作用於騰訊 SoterServer，不影響 KeyMint。</string>
-    <string name="soter_beta_enabled">啟用 Soter 相容</string>
-    <string name="soter_beta_enabled_desc">預設關閉。點選套用後才會儲存變更。</string>
-    <string name="soter_beta_reboot">請自行安裝並啟用 Zygisk Next。開啟或關閉後均需重新啟動裝置；相容效果尚未驗證。</string>
-    <string name="soter_beta_saved">Soter Beta 設定已儲存，請重新啟動裝置以套用；相容效果尚未驗證。</string>
-    <string name="soter_beta_preview">僅為介面預覽，此處無法儲存裝置設定。</string>
 </resources>
