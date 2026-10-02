@@ -327,12 +327,35 @@ fn encodes_all_d_soter_reply_shapes_without_session_queues() {
                         let json_length = int32(payload, 0) as usize;
                         assert_eq!(payload.len(), 4 + json_length + 256);
                         let json = std::str::from_utf8(&payload[4..4 + json_length]).unwrap();
-                        assert!(json.starts_with("{\"pub_key\":\""));
-                        assert!(json.ends_with("\"uid\":0}"));
-                        assert!(payload[4 + json_length..].iter().all(|byte| *byte == 0));
+                        assert!(json.starts_with("{\"pub_key\":\"-----BEGIN PUBLIC KEY-----\\n"));
+                        assert!(json.contains("-----END PUBLIC KEY-----\\n"));
+                        assert!(json.contains("\"cpu_id\":\""));
+                        assert!(json.contains("\"counter\":0"));
+                        assert!(json.ends_with("\"uid\":\"0\"}"));
+                        let sig = &payload[4 + json_length..];
+                        assert_eq!(sig.len(), 256);
+                        assert!(
+                            !sig.iter().all(|b| *b == 0),
+                            "signature must not be all zero"
+                        );
                     }
-                    10 => assert_eq!(payload, [0; 256]),
-                    11 => assert_eq!(payload, b"TEESIM-SOTER-0001"),
+                    10 => {
+                        assert_eq!(payload.len(), 256);
+                        assert!(
+                            !payload.iter().all(|b| *b == 0),
+                            "signature must not be all zero"
+                        );
+                    }
+                    11 => {
+                        assert_eq!(payload.len(), 16);
+                        assert_eq!(
+                            payload,
+                            &[
+                                0x00, 0x00, 0x00, 0x00, 0x72, 0x55, 0x90, 0xfc,
+                                0xa2, 0x0e, 0x90, 0x94, 0xa0, 0x70, 0x39, 0x1a,
+                            ]
+                        );
+                    }
                     _ => unreachable!(),
                 }
             }
