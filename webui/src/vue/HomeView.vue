@@ -31,6 +31,7 @@ const props = defineProps<{
   diagnostics: DiagnosticsState | null
   diagnosticsStatus: 'loading' | 'ready' | 'error'
   teeStatus: TeeStatus
+  securityPatch: string | null
   activities: ActivityEntry[]
   activityStatus: ActivityStatus
   activityClearBusy: boolean
