@@ -27,6 +27,7 @@ import { fetchLatestSecurityPatch } from '../security_patch'
 import { isDev } from '../utils/dev'
 import HomeView, { type KeyboxStatus, type ModuleStatus, type TeeStatus } from './HomeView.vue'
 import SettingsView from './SettingsView.vue'
+import SoterDialog from './SoterDialog.vue'
 import TargetsView from './TargetsView.vue'
 import ToolsView, { type ToolEvent } from './ToolsView.vue'
 import FileBrowserSheet from './FileBrowserSheet.vue'
@@ -58,11 +59,13 @@ const activities = ref<ActivityEntry[]>([])
 const activityStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const activityClearBusy = ref(false)
 const securityPatchBusy = ref<'sync' | 'restore' | null>(null)
+const soterOpen = ref(false)
 const keyboxOpen = ref(false)
 const selectedKeybox = ref<{ name: string, contents: Uint8Array } | null>(null)
 const keyboxBusy = ref(false)
 const targetsView = ref<InstanceType<typeof TargetsView> | null>(null)
 const settingsView = ref<InstanceType<typeof SettingsView> | null>(null)
+const soterDialog = ref<InstanceType<typeof SoterDialog> | null>(null)
 
 const pageIds = ['home', 'tools', 'settings'] as const
 const navItems = computed(() => [
@@ -275,6 +278,7 @@ function onTargetsOverlayClose(): void {
 }
 
 function handleEscape(): void {
+  if (soterOpen.value && soterDialog.value?.busy) return
   if (targetsOpen.value && targetsView.value?.dismissOverlay()) return
   if (history.size > 0) history.back()
 }
@@ -449,6 +453,7 @@ function onTool(event: ToolEvent): void {
     case 'installKeybox': void chooseKeybox(); break
     case 'syncSecurityPatch': void syncPatch(false); break
     case 'restoreSecurityPatch': void syncPatch(true); break
+    case 'openSoterBeta': soterOpen.value = true; break
   }
 }
 
@@ -530,6 +535,36 @@ watch(targetsOpen, open => {
   })
 })
 
+function trackSoterOverlay(): void {
+  const key = 'soter-beta'
+  if (!soterOpen.value || overlayHistory.has(key)) return
+  overlayHistory.add(key)
+  history.push(key, () => {
+    overlayHistory.delete(key)
+    if (soterDialog.value?.requestClose() === false) {
+      // Re-arm after the current popstate handler finishes so a busy dialog
+      // does not lose its back entry or close the page beneath it.
+      void nextTick(trackSoterOverlay)
+    }
+  })
+}
+watch(soterOpen, open => {
+  if (open) trackSoterOverlay()
+  else if (overlayHistory.delete('soter-beta')) history.consume('soter-beta')
+})
+function trackSoterHalOverlay(): void {
+  const key = 'soter-hal'
+  if (!soterHalOpen.value || overlayHistory.has(key)) return
+  overlayHistory.add(key)
+  history.push(key, () => {
+    overlayHistory.delete(key)
+    if (soterHalDialog.value?.requestClose() === false) void nextTick(trackSoterHalOverlay)
+  })
+}
+watch(soterHalOpen, open => {
+  if (open) trackSoterHalOverlay()
+  else if (overlayHistory.delete('soter-hal')) history.consume('soter-hal')
+})
 watch(keyboxOpen, open => {
   if (open && !overlayHistory.has('keybox')) {
     overlayHistory.add('keybox')
@@ -568,6 +603,7 @@ watch(keyboxOpen, open => {
           @install-keybox="onTool('installKeybox')"
           @sync-security-patch="onTool('syncSecurityPatch')"
           @restore-security-patch="onTool('restoreSecurityPatch')"
+          @open-soter-beta="onTool('openSoterBeta')"
         />
       </Transition>
       <Transition name="page-switch">
@@ -635,6 +671,7 @@ watch(keyboxOpen, open => {
       </template>
     </MiuixDialog>
 
+    <SoterDialog ref="soterDialog" v-model="soterOpen" :cli="cli" @notify="notify" />
     <MiuixSnackbarHost />
   </div>
 </template>

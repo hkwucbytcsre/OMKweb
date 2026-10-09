@@ -185,7 +185,6 @@
     <string name="settings_floating_bottom_bar_desc">Show navigation as a floating panel</string>
     <string name="settings_liquid_glass">Liquid glass</string>
     <string name="settings_liquid_glass_desc">Add translucent glass depth to surfaces</string>
-  # <<<<<<< HEAD
     <string name="tools_soter_beta">Tencent Soter compatibility (Beta)</string>
     <string name="tools_soter_beta_desc">Experimental compatibility for Tencent SoterServer. Requires Zygisk Next.</string>
     <string name="soter_beta_warning">Beta simulation only: returns a fixed public key and zero-filled signatures. This is not real TEE attestation and does not repair payments or cryptographic signatures. Applies only to Tencent SoterServer, not KeyMint.</string>
@@ -211,6 +210,4 @@
     <string name="soter_hal_exclusive">Disable Tencent Soter Beta before enabling the Qualcomm Soter service.</string>
     <string name="soter_hal_saved">Soter HAL configuration saved</string>
     <string name="soter_hal_preview">Preview only. Device settings cannot be saved here.</string>
-  # =======
-  # >>>>>>> 66f9614 (移除 Soter 服务（soterta-svc）与 PIF 伪装功能)
 </resources>
