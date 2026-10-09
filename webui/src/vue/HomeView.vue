@@ -31,8 +31,9 @@ const props = defineProps<{
   diagnostics: DiagnosticsState | null
   diagnosticsStatus: 'loading' | 'ready' | 'error'
   teeStatus: TeeStatus
-  securityPatch: string | null
-  spoofedDevice: string | null | undefined
+  activities: ActivityEntry[]
+  activityStatus: ActivityStatus
+  activityClearBusy: boolean
 }>()
 
 const emit = defineEmits<{
@@ -205,10 +206,6 @@ function certificateDate(value: string): string {
         <div class="identity-field">
           <span>{{ tr('home_tee_status', 'TEE status') }}</span>
           <strong :data-tone="teeState.tone">{{ teeState.label }}</strong>
-        </div>
-        <div class="identity-field">
-          <span>{{ tr('home_spoofed_device', 'Spoofed device fingerprint') }}</span>
-          <strong>{{ spoofedDevice === null ? tr('pif_disabled', 'Disabled') : (spoofedDevice ?? '\u2014') }}</strong>
         </div>
       </MiuixCard>
     </div>
