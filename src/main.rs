@@ -1,7 +1,7 @@
 #![recursion_limit = "256"]
 #![feature(once_cell_try)]
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine as _};
 use std::panic;
 use std::sync::Arc;
