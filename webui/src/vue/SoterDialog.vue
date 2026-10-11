@@ -19,6 +19,7 @@ const emit = defineEmits<{
 const preview = isDev()
 const enabled = ref(false)
 const savedEnabled = ref(false)
+const soterHalEnabled = ref(false)
 const status = ref<'loading' | 'ready' | 'error'>('loading')
 const errorMessage = ref('')
 const busy = ref(false)
@@ -27,7 +28,8 @@ let generation = 0
 const canApply = computed(() => !preview
   && !busy.value
   && status.value === 'ready'
-  && enabled.value !== savedEnabled.value)
+  && enabled.value !== savedEnabled.value
+  && (!enabled.value || !soterHalEnabled.value))
 
 function tr(key: string, fallback: string): string {
   const value = i18n.t(key)
@@ -40,13 +42,15 @@ async function load(): Promise<void> {
   status.value = 'loading'
   errorMessage.value = ''
   enabled.value = false
+  soterHalEnabled.value = false
   try {
-    const state = preview
-      ? { enabled: false }
-      : await props.cli.getSoterBeta()
+    const [state, halState] = preview
+      ? [{ enabled: false }, { enabled: false }]
+      : await Promise.all([props.cli.getSoterBeta(), props.cli.getSoterHal()])
     if (currentGeneration !== generation || !props.modelValue) return
     enabled.value = state.enabled
     savedEnabled.value = state.enabled
+    soterHalEnabled.value = halState.enabled
     status.value = 'ready'
   } catch (error) {
     if (currentGeneration !== generation || !props.modelValue) return
@@ -95,9 +99,12 @@ async function apply(): Promise<void> {
   >
     <div class="soter-dialog" :aria-busy="busy || status === 'loading'">
       <p class="soter-dialog__warning">
-        {{ tr('soter_beta_warning', 'Beta simulation only: replies carry a software-generated key pair and signature. This is not real TEE attestation and does not repair payments or cryptographic signatures. Applies only to Tencent SoterServer, not KeyMint.') }}
+        {{ tr('soter_beta_warning', 'Beta simulation only: returns a fixed public key and zero-filled signatures. This is not real TEE attestation and does not repair payments or cryptographic signatures. Applies only to Tencent SoterServer, not KeyMint.') }}
       </p>
       <p>{{ tr('soter_beta_reboot', 'Install and enable Zygisk Next separately. Restart the device after enabling or disabling. Compatibility is not verified.') }}</p>
+      <p v-if="soterHalEnabled" class="soter-dialog__warning">
+        Only one Soter service can be enabled at a time. Disable Qualcomm Soter HAL before enabling Tencent Soter Beta.
+      </p>
 
       <div v-if="status === 'loading'" class="soter-dialog__loading" role="status">
         <MiuixProgressIndicator type="circular" :size="28" />

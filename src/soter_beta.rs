@@ -6,7 +6,7 @@ use std::path::Path;
 use anyhow::{bail, Context, Result};
 use kmr_common::consts::{KEYSTORE_GID, KEYSTORE_UID};
 use kmr_common::runtime::fs::atomic_replace_preserving_metadata;
-use soter_common as soter;
+use pif_common::soter;
 
 pub fn require_root() -> Result<()> {
     require_uid(unsafe { libc::geteuid() })
