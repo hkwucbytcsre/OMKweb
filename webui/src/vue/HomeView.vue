@@ -10,6 +10,7 @@ import {
 } from 'miuix-vue'
 import { ExpandMore, Info } from 'miuix-vue/icons'
 import type {
+  ActivityEntry,
   DiagnosticsState,
   KeyboxInspector,
   KeyboxLevel,
@@ -21,6 +22,7 @@ import { i18n } from '../i18n'
 export type ModuleStatus = 'loading' | 'ready' | 'error'
 export type KeyboxStatus = 'loading' | 'bundled' | 'custom' | 'invalid' | 'error'
 export type TeeStatus = 'loading' | 'normal' | 'error'
+export type ActivityStatus = 'loading' | 'ready' | 'error'
 
 const props = defineProps<{
   keyboxStatus: KeyboxStatus

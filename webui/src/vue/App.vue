@@ -15,6 +15,7 @@ import { AppList, type AppListSnapshot } from '../app_list/app_list'
 import { appearance } from '../appearance'
 import {
   Cli,
+  type ActivityEntry,
   type DiagnosticsState,
   type KeyboxInspector,
   type KeyboxRevocationStatus,
@@ -370,6 +371,22 @@ async function refreshIdentity(force = false): Promise<void> {
   }
 }
 
+async function refreshActivity(): Promise<void> {
+  try {
+    activities.value = (await cli.getActivityLog()).slice().sort((left, right) => right.timestamp - left.timestamp)
+    activityStatus.value = 'ready'
+  } catch (error) {
+    if (isDev()) {
+      const now = Math.floor(Date.now() / 1000)
+      activities.value = [{ action: 'keybox_changed', detail: '', timestamp: now - 3600 }]
+      activityStatus.value = 'ready'
+    } else {
+      activityStatus.value = 'error'
+      console.error('Unable to load activity:', error)
+    }
+  }
+}
+
 async function refreshDiagnostics(): Promise<void> {
   diagnosticsStatus.value = 'loading'
   if (isDev()) {
@@ -423,7 +440,7 @@ async function installKeybox(): Promise<void> {
     notify(i18n.t('prompt_keybox_replaced'))
     keyboxOpen.value = false
     selectedKeybox.value = null
-    await Promise.all([refreshIdentity(true), refreshDiagnostics()])
+    await Promise.all([refreshIdentity(true), refreshDiagnostics(), refreshActivity()])
   } catch (error) {
     notify(i18n.t('prompt_keybox_replace_error', error instanceof Error ? error.message : String(error)), true)
   } finally {
@@ -445,6 +462,7 @@ async function syncPatch(restore: boolean): Promise<void> {
       securityPatch.value = applied
       notify(i18n.t('prompt_security_patch_sync_complete', applied))
     }
+    await refreshActivity()
   } catch (error) {
     notify(error instanceof Error ? error.message : String(error), true)
   } finally {
@@ -459,6 +477,20 @@ function onTool(event: ToolEvent): void {
     case 'syncSecurityPatch': void syncPatch(false); break
     case 'restoreSecurityPatch': void syncPatch(true); break
     case 'openSoterBeta': soterOpen.value = true; break
+  }
+}
+
+async function clearActivities(): Promise<void> {
+  if (activityClearBusy.value) return
+  activityClearBusy.value = true
+  try {
+    if (!isDev()) await cli.clearActivityLog()
+    activities.value = []
+    notify(i18n.t('home_activity_cleared'))
+  } catch (error) {
+    notify(error instanceof Error ? error.message : String(error), true)
+  } finally {
+    activityClearBusy.value = false
   }
 }
 
@@ -495,7 +527,7 @@ onMounted(async () => {
       history.consume('file-selector')
     }
   })
-  await Promise.all([reloadApps(true), refreshIdentity(), refreshDiagnostics()])
+  await Promise.all([reloadApps(true), refreshIdentity(), refreshDiagnostics(), refreshActivity()])
 })
 
 onBeforeUnmount(() => {
