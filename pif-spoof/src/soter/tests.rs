@@ -402,8 +402,6 @@ fn exported_public_fixture_signs_exact_json_and_rejects_all_field_tampering() {
         assert_eq!(exported.e(), &rsa::BigUint::from(65537u32));
         assert_eq!(value["uid"], "10001");
         assert_eq!(value["cpu_id"], "4f4d4b2d534f46542d544553542d3031");
-        assert_eq!(value["software_test"], true);
-        assert_eq!(value["key_source"], "public_test_fixture");
         assert!(value["counter"].as_u64().unwrap() > 0);
         assert!(!value.as_object().unwrap().contains_key("certs"));
         if code == 6 {
@@ -754,7 +752,6 @@ fn android_local_binder_round_trip_uses_native_parcels_without_enabling_module()
         assert!(verifies(&expected, json, signature), "native export {code}");
         let value: serde_json::Value = serde_json::from_slice(json).unwrap();
         assert_eq!(value["uid"], "10501");
-        assert_eq!(value["software_test"], true);
     }
     let opened = invoke(9, 0);
     assert_eq!(int32(&opened, 16), 0);

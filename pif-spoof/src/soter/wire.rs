@@ -274,8 +274,6 @@ impl SoftwareState {
         let mut value: serde_json::Value =
             serde_json::from_slice(&blob::key_json(&fixture.public_pem, CPU_ID, counter, uid))
                 .map_err(|_| UNAVAILABLE)?;
-        value["software_test"] = true.into();
-        value["key_source"] = "public_test_fixture".into();
         if let Some(key) = key {
             value["key_name"] = key.into();
         }
