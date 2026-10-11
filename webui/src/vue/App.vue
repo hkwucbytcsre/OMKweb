@@ -15,7 +15,6 @@ import { AppList, type AppListSnapshot } from '../app_list/app_list'
 import { appearance } from '../appearance'
 import {
   Cli,
-  type ActivityEntry,
   type DiagnosticsState,
   type KeyboxInspector,
   type KeyboxRevocationStatus,
@@ -27,8 +26,10 @@ import { i18n } from '../i18n'
 import { fetchLatestSecurityPatch } from '../security_patch'
 import { isDev } from '../utils/dev'
 import HomeView, { type KeyboxStatus, type ModuleStatus, type TeeStatus } from './HomeView.vue'
+import PifFingerprintDialog from './PifFingerprintDialog.vue'
 import SettingsView from './SettingsView.vue'
 import SoterDialog from './SoterDialog.vue'
+import SoterHalDialog from './SoterHalDialog.vue'
 import TargetsView from './TargetsView.vue'
 import ToolsView, { type ToolEvent } from './ToolsView.vue'
 import FileBrowserSheet from './FileBrowserSheet.vue'
@@ -56,17 +57,19 @@ const diagnostics = ref<DiagnosticsState | null>(null)
 const diagnosticsStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const teeStatus = ref<TeeStatus>('loading')
 const securityPatch = ref<string | null>(null)
-const activities = ref<ActivityEntry[]>([])
-const activityStatus = ref<'loading' | 'ready' | 'error'>('loading')
-const activityClearBusy = ref(false)
+const spoofedDevice = ref<string | null | undefined>(undefined)
 const securityPatchBusy = ref<'sync' | 'restore' | null>(null)
 const soterOpen = ref(false)
+const soterHalOpen = ref(false)
+const pifOpen = ref(false)
 const keyboxOpen = ref(false)
 const selectedKeybox = ref<{ name: string, contents: Uint8Array } | null>(null)
 const keyboxBusy = ref(false)
 const targetsView = ref<InstanceType<typeof TargetsView> | null>(null)
 const settingsView = ref<InstanceType<typeof SettingsView> | null>(null)
+const pifDialog = ref<InstanceType<typeof PifFingerprintDialog> | null>(null)
 const soterDialog = ref<InstanceType<typeof SoterDialog> | null>(null)
+const soterHalDialog = ref<InstanceType<typeof SoterHalDialog> | null>(null)
 
 const pageIds = ['home', 'tools', 'settings'] as const
 const navItems = computed(() => [
@@ -280,6 +283,7 @@ function onTargetsOverlayClose(): void {
 
 function handleEscape(): void {
   if (soterOpen.value && soterDialog.value?.busy) return
+  if (soterHalOpen.value && soterHalDialog.value?.busy) return
   if (targetsOpen.value && targetsView.value?.dismissOverlay()) return
   if (history.size > 0) history.back()
 }
@@ -344,13 +348,15 @@ async function refreshIdentity(force = false): Promise<void> {
     }
     teeStatus.value = 'normal'
     securityPatch.value = '2026-08-01'
+    spoofedDevice.value = 'Google Pixel 9 Pro'
     return
   }
   try {
-    const [keybox, patch, tee] = await Promise.allSettled([
+    const [keybox, patch, tee, pif] = await Promise.allSettled([
       cli.getKeyboxState(),
       cli.getSystemSecurityPatch(),
       cli.getTeeStatus(),
+      cli.getPifFingerprintState(),
     ])
     if (keybox.status === 'fulfilled') {
       const value = keybox.value
@@ -366,24 +372,13 @@ async function refreshIdentity(force = false): Promise<void> {
     if (patch.status === 'fulfilled') securityPatch.value = patch.value
     if (tee.status === 'fulfilled') teeStatus.value = 'normal'
     else teeStatus.value = 'error'
+    if (pif.status === 'fulfilled') {
+      spoofedDevice.value = pif.value.enabled
+        ? (/^google\s/i.test(pif.value.model) ? pif.value.model : `Google ${pif.value.model}`)
+        : null
+    }
   } catch (error) {
     console.error('Unable to load OMK identity:', error)
-  }
-}
-
-async function refreshActivity(): Promise<void> {
-  try {
-    activities.value = (await cli.getActivityLog()).slice().sort((left, right) => right.timestamp - left.timestamp)
-    activityStatus.value = 'ready'
-  } catch (error) {
-    if (isDev()) {
-      const now = Math.floor(Date.now() / 1000)
-      activities.value = [{ action: 'keybox_changed', detail: '', timestamp: now - 3600 }]
-      activityStatus.value = 'ready'
-    } else {
-      activityStatus.value = 'error'
-      console.error('Unable to load activity:', error)
-    }
   }
 }
 
@@ -440,7 +435,7 @@ async function installKeybox(): Promise<void> {
     notify(i18n.t('prompt_keybox_replaced'))
     keyboxOpen.value = false
     selectedKeybox.value = null
-    await Promise.all([refreshIdentity(true), refreshDiagnostics(), refreshActivity()])
+    await Promise.all([refreshIdentity(true), refreshDiagnostics()])
   } catch (error) {
     notify(i18n.t('prompt_keybox_replace_error', error instanceof Error ? error.message : String(error)), true)
   } finally {
@@ -462,7 +457,6 @@ async function syncPatch(restore: boolean): Promise<void> {
       securityPatch.value = applied
       notify(i18n.t('prompt_security_patch_sync_complete', applied))
     }
-    await refreshActivity()
   } catch (error) {
     notify(error instanceof Error ? error.message : String(error), true)
   } finally {
@@ -477,20 +471,8 @@ function onTool(event: ToolEvent): void {
     case 'syncSecurityPatch': void syncPatch(false); break
     case 'restoreSecurityPatch': void syncPatch(true); break
     case 'openSoterBeta': soterOpen.value = true; break
-  }
-}
-
-async function clearActivities(): Promise<void> {
-  if (activityClearBusy.value) return
-  activityClearBusy.value = true
-  try {
-    if (!isDev()) await cli.clearActivityLog()
-    activities.value = []
-    notify(i18n.t('home_activity_cleared'))
-  } catch (error) {
-    notify(error instanceof Error ? error.message : String(error), true)
-  } finally {
-    activityClearBusy.value = false
+    case 'openSoterHal': soterHalOpen.value = true; break
+    case 'spoofPif': pifOpen.value = true; break
   }
 }
 
@@ -527,7 +509,7 @@ onMounted(async () => {
       history.consume('file-selector')
     }
   })
-  await Promise.all([reloadApps(true), refreshIdentity(), refreshDiagnostics(), refreshActivity()])
+  await Promise.all([reloadApps(true), refreshIdentity(), refreshDiagnostics()])
 })
 
 onBeforeUnmount(() => {
@@ -572,6 +554,15 @@ watch(targetsOpen, open => {
   })
 })
 
+watch(pifOpen, open => {
+  if (open && !overlayHistory.has('pif-fingerprint')) {
+    overlayHistory.add('pif-fingerprint')
+    history.push('pif-fingerprint', () => {
+      overlayHistory.delete('pif-fingerprint')
+      pifDialog.value?.requestClose()
+    })
+  } else if (!open && overlayHistory.delete('pif-fingerprint')) history.consume('pif-fingerprint')
+})
 function trackSoterOverlay(): void {
   const key = 'soter-beta'
   if (!soterOpen.value || overlayHistory.has(key)) return
@@ -588,6 +579,19 @@ function trackSoterOverlay(): void {
 watch(soterOpen, open => {
   if (open) trackSoterOverlay()
   else if (overlayHistory.delete('soter-beta')) history.consume('soter-beta')
+})
+function trackSoterHalOverlay(): void {
+  const key = 'soter-hal'
+  if (!soterHalOpen.value || overlayHistory.has(key)) return
+  overlayHistory.add(key)
+  history.push(key, () => {
+    overlayHistory.delete(key)
+    if (soterHalDialog.value?.requestClose() === false) void nextTick(trackSoterHalOverlay)
+  })
+}
+watch(soterHalOpen, open => {
+  if (open) trackSoterHalOverlay()
+  else if (overlayHistory.delete('soter-hal')) history.consume('soter-hal')
 })
 watch(keyboxOpen, open => {
   if (open && !overlayHistory.has('keybox')) {
@@ -612,11 +616,8 @@ watch(keyboxOpen, open => {
           :diagnostics-status="diagnosticsStatus"
           :tee-status="teeStatus"
           :security-patch="securityPatch"
+          :spoofed-device="spoofedDevice"
           @refresh-diagnostics="refreshDiagnostics"
-          :activities="activities"
-          :activity-status="activityStatus"
-          :activity-clear-busy="activityClearBusy"
-          @clear-activities="clearActivities"
         />
       </Transition>
       <Transition name="page-switch">
@@ -628,6 +629,8 @@ watch(keyboxOpen, open => {
           @sync-security-patch="onTool('syncSecurityPatch')"
           @restore-security-patch="onTool('restoreSecurityPatch')"
           @open-soter-beta="onTool('openSoterBeta')"
+          @open-soter-hal="onTool('openSoterHal')"
+          @spoof-pif="onTool('spoofPif')"
         />
       </Transition>
       <Transition name="page-switch">
@@ -695,7 +698,15 @@ watch(keyboxOpen, open => {
       </template>
     </MiuixDialog>
 
+    <PifFingerprintDialog
+      ref="pifDialog"
+      v-model="pifOpen"
+      :cli="cli"
+      @notify="notify"
+      @changed="refreshIdentity(true)"
+    />
     <SoterDialog ref="soterDialog" v-model="soterOpen" :cli="cli" @notify="notify" />
+    <SoterHalDialog ref="soterHalDialog" v-model="soterHalOpen" :cli="cli" @notify="notify" />
     <MiuixSnackbarHost />
   </div>
 </template>

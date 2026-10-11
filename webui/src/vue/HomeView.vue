@@ -10,7 +10,6 @@ import {
 } from 'miuix-vue'
 import { ExpandMore, Info } from 'miuix-vue/icons'
 import type {
-  ActivityEntry,
   DiagnosticsState,
   KeyboxInspector,
   KeyboxLevel,
@@ -22,7 +21,6 @@ import { i18n } from '../i18n'
 export type ModuleStatus = 'loading' | 'ready' | 'error'
 export type KeyboxStatus = 'loading' | 'bundled' | 'custom' | 'invalid' | 'error'
 export type TeeStatus = 'loading' | 'normal' | 'error'
-export type ActivityStatus = 'loading' | 'ready' | 'error'
 
 const props = defineProps<{
   keyboxStatus: KeyboxStatus
@@ -34,9 +32,7 @@ const props = defineProps<{
   diagnosticsStatus: 'loading' | 'ready' | 'error'
   teeStatus: TeeStatus
   securityPatch: string | null
-  activities: ActivityEntry[]
-  activityStatus: ActivityStatus
-  activityClearBusy: boolean
+  spoofedDevice: string | null | undefined
 }>()
 
 const emit = defineEmits<{
@@ -209,6 +205,10 @@ function certificateDate(value: string): string {
         <div class="identity-field">
           <span>{{ tr('home_tee_status', 'TEE status') }}</span>
           <strong :data-tone="teeState.tone">{{ teeState.label }}</strong>
+        </div>
+        <div class="identity-field">
+          <span>{{ tr('home_spoofed_device', 'Spoofed device fingerprint') }}</span>
+          <strong>{{ spoofedDevice === null ? tr('pif_disabled', 'Disabled') : (spoofedDevice ?? '\u2014') }}</strong>
         </div>
       </MiuixCard>
     </div>

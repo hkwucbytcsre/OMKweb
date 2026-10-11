@@ -13,37 +13,39 @@ type SupportedAbi = typeof SUPPORTED_ABIS[number]
 type HelperPaths = { abi: SupportedAbi, inject: string, keymint: string }
 const KEYBOX_BASE64_CHUNK_BYTES = 48 * 1024
 const MAX_BULLETIN_BYTES = 2 * 1024 * 1024
+const MAX_PIF_CATALOG_BYTES = 64 * 1024
+const MAX_PIF_STATE_BYTES = 2 * 1024
+const MAX_SOTER_HAL_JSON_BYTES = 16 * 1024
 const MAX_DIAGNOSTICS_JSON_BYTES = 8 * 1024
 const MAX_KEYBOX_INSPECTOR_JSON_BYTES = 32 * 1024
 const MAX_APP_PATCH_LEVELS_JSON_BYTES = 64 * 1024
-const MAX_SOTER_HAL_JSON_BYTES = 16 * 1024
 const DEFAULT_SOTER_RELAY_URL = 'http://example.110.40.170.96:10886'
 const DEFAULT_SOTER_RELAY_DEVICE_ID = 'device-b-c3f204aa'
 const DEFAULT_SOTER_RELAY_TOKEN = 'aY7kRSDDR6PMmamlKwtgf7mQgr-X5uFd'
-const MAX_ACTIVITY_ENTRIES = 30
-const MAX_ACTIVITY_DETAIL_BYTES = 256
-const MAX_ACTIVITY_TIMESTAMP = 253_402_300_799
-
-const ACTIVITY_ACTIONS = [
-  'targets_saved',
-  'keybox_changed',
-  'widevine_installed',
-  'security_patch_synced',
-  'security_patch_restored',
-  // Read-only compatibility for existing activity records.
-  'pif_enabled',
-  'pif_disabled',
-  'adb_disabler_changed',
-] as const
-export type ActivityAction = typeof ACTIVITY_ACTIONS[number]
-
-export interface ActivityEntry {
-  action: ActivityAction
-  detail: string
-  timestamp: number
-}
+const MAX_PIF_DEVICES = 64
+const MAX_PIF_MODEL_LENGTH = 128
+const MAX_PIF_PRODUCT_LENGTH = 128
+const MAX_PIF_FINGERPRINT_LENGTH = 1024
+const PIF_PRODUCT_RE = /^[a-z0-9][a-z0-9_]*$/
 
 export const MAX_KEYBOX_XML_BYTES = 64 * 1024
+
+export interface PifDevice {
+  model: string
+  product: string
+}
+
+export interface EnabledPifFingerprintState {
+  enabled: true
+  model: string
+  product: string
+  fingerprint: string
+  security_patch: string
+}
+
+export type PifFingerprintState = {
+  enabled: false
+} | EnabledPifFingerprintState
 
 export type KeyboxSource = 'google_hardware' | 'google_remote' | 'unknown'
 export type KeyboxLevel = 'tee' | 'strongbox' | 'unknown'
@@ -200,6 +202,48 @@ function isSafeText(value: unknown, maxLength: number): value is string {
     && !/[\u0000-\u001f\u007f]/.test(value)
 }
 
+function isPifProduct(value: unknown): value is string {
+  return isSafeText(value, MAX_PIF_PRODUCT_LENGTH) && PIF_PRODUCT_RE.test(value)
+}
+
+function parsePifDevice(value: unknown): PifDevice {
+  if (!isRecord(value)
+      || !hasOnlyKeys(value, ['model', 'product'])
+      || !isSafeText(value.model, MAX_PIF_MODEL_LENGTH)
+      || !isPifProduct(value.product)) {
+    throw new Error('OMK returned an invalid PIF device')
+  }
+  return { model: value.model, product: value.product }
+}
+
+function parsePifState(output: string): PifFingerprintState {
+  const parsed = parseCanonicalJson(output, 'PIF fingerprint state')
+  if (!isRecord(parsed) || typeof parsed.enabled !== 'boolean') {
+    throw new Error('OMK returned an invalid PIF fingerprint state')
+  }
+  if (!parsed.enabled) {
+    if (!hasOnlyKeys(parsed, ['enabled'])) {
+      throw new Error('OMK returned an invalid disabled PIF fingerprint state')
+    }
+    return { enabled: false }
+  }
+  if (!hasOnlyKeys(parsed, ['enabled', 'model', 'product', 'fingerprint', 'security_patch'])
+      || !isSafeText(parsed.model, MAX_PIF_MODEL_LENGTH)
+      || !isPifProduct(parsed.product)
+      || !isSafeText(parsed.fingerprint, MAX_PIF_FINGERPRINT_LENGTH)
+      || !isSafeText(parsed.security_patch, 10)
+      || !isSecurityPatchDate(parsed.security_patch)) {
+    throw new Error('OMK returned an invalid enabled PIF fingerprint state')
+  }
+  return {
+    enabled: true,
+    model: parsed.model,
+    product: parsed.product,
+    fingerprint: parsed.fingerprint,
+    security_patch: parsed.security_patch,
+  }
+}
+
 function parseKeyboxState(output: string): KeyboxState {
   const parsed = parseCanonicalJson(output, 'Keybox state')
   if (!isRecord(parsed)
@@ -351,35 +395,6 @@ function parseDiagnostics(output: string): DiagnosticsState {
   }
 }
 
-function parseActivityLog(output: string): ActivityEntry[] {
-  const parsed = parseCanonicalJson(output, 'WebUI activity log')
-  if (!Array.isArray(parsed) || parsed.length > MAX_ACTIVITY_ENTRIES) {
-    throw new Error('OMK returned an invalid WebUI activity log')
-  }
-
-  const actions = new Set<string>(ACTIVITY_ACTIONS)
-  return parsed.map(value => {
-    if (!isRecord(value)
-        || !hasOnlyKeys(value, ['action', 'detail', 'timestamp'])
-        || typeof value.action !== 'string'
-        || !actions.has(value.action)
-        || typeof value.detail !== 'string'
-        || new TextEncoder().encode(value.detail).byteLength > MAX_ACTIVITY_DETAIL_BYTES
-        || /[\u0000-\u001f\u007f]/.test(value.detail)
-        || typeof value.timestamp !== 'number'
-        || !Number.isSafeInteger(value.timestamp)
-        || value.timestamp <= 0
-        || value.timestamp > MAX_ACTIVITY_TIMESTAMP) {
-      throw new Error('OMK returned an invalid WebUI activity entry')
-    }
-    return {
-      action: value.action as ActivityAction,
-      detail: value.detail,
-      timestamp: value.timestamp,
-    }
-  })
-}
-
 function encodeBase64Bytes(bytes: Uint8Array): string {
   let binary = ''
   const chunkSize = 0x8000
@@ -466,7 +481,6 @@ export class Cli {
     const normalized = normalizeScoopTargets(packages)
     const payload = encodeBase64Utf8(JSON.stringify(normalized))
     await this.#runInject(['--webui-set-scoop', payload])
-    await this.#recordActivity('targets_saved', String(normalized.length))
   }
 
   async installKeybox(contents: Uint8Array): Promise<void> {
@@ -481,7 +495,6 @@ export class Cli {
     }
     const { keymint } = await this.#getHelperPaths()
     await this.#run(keymint, ['--webui-install-keybox', ...chunks])
-    await this.#recordActivity('keybox_changed', '')
   }
 
   async getKeyboxState(): Promise<KeyboxState> {
@@ -550,19 +563,14 @@ export class Cli {
         || typeof parsed.uid_map !== 'string') {
       throw new Error('OMK returned invalid Soter HAL state')
     }
-    return {
-      enabled: parsed.enabled,
-      remote_enabled: parsed.remote_enabled,
-      url: parsed.url,
-      token: parsed.token,
-      device_id: parsed.device_id,
-      tls_insecure: parsed.tls_insecure,
-      uid_map: parsed.uid_map,
-    }
+    return parsed as unknown as SoterHalState
   }
 
   async setSoterHal(state: SoterHalState): Promise<void> {
     const { keymint } = await this.#getHelperPaths()
+    // Native save resolves empty relay identity fields to the module defaults,
+    // including when the relay is currently disabled. Normalize before the
+    // write so the mandatory read-back check compares effective values.
     const effectiveState: SoterHalState = {
       ...state,
       url: state.url || DEFAULT_SOTER_RELAY_URL,
@@ -573,6 +581,8 @@ export class Cli {
     if (new TextEncoder().encode(json).byteLength > MAX_SOTER_HAL_JSON_BYTES) {
       throw new Error('Soter HAL configuration exceeds the byte limit')
     }
+    // KernelSU runs spawn arguments through a shell. Encode structured data
+    // just like the package-list and activity helpers so JSON stays one arg.
     const payload = encodeBase64Utf8(json)
     const output = await this.#run(keymint, ['--webui-set-soter-hal-base64', payload], 256)
     if (output !== 'soter_hal_saved') {
@@ -595,7 +605,6 @@ export class Cli {
     if (output !== date && output !== firstDayFallback) {
       throw new Error('OMK returned an unexpected security-patch date')
     }
-    await this.#recordActivity('security_patch_synced', output)
     return output
   }
 
@@ -605,7 +614,6 @@ export class Cli {
     if (output !== 'auto') {
       throw new Error('OMK returned an unexpected security-patch mode')
     }
-    await this.#recordActivity('security_patch_restored', '')
   }
 
   async getSystemSecurityPatch(): Promise<string> {
@@ -637,18 +645,6 @@ export class Cli {
     }
   }
 
-  async getActivityLog(): Promise<ActivityEntry[]> {
-    const { keymint } = await this.#getHelperPaths()
-    const output = await this.#run(keymint, ['--webui-get-activity-log'], 16 * 1024)
-    return parseActivityLog(output)
-  }
-
-  async clearActivityLog(): Promise<void> {
-    const { keymint } = await this.#getHelperPaths()
-    const output = await this.#run(keymint, ['--webui-clear-activity-log'], 256)
-    if (output !== 'ok') throw new Error('OMK returned an unexpected activity-log result')
-  }
-
   async fetchSecurityBulletin(): Promise<string> {
     let lastError: Error | null = null
     for (const url of [ANDROID_SECURITY_BULLETIN_URL, ANDROID_SECURITY_BULLETIN_MIRROR_URL]) {
@@ -666,20 +662,60 @@ export class Cli {
     throw new Error(`Unable to download the Android Security Bulletin: ${lastError?.message ?? 'network request failed'}`)
   }
 
-  async #recordActivity(action: ActivityAction, detail: string): Promise<void> {
-    try {
-      const { keymint } = await this.#getHelperPaths()
-      const encodedDetail = encodeBase64Utf8(detail)
-      const output = await this.#run(
-        keymint,
-        ['--webui-record-activity', action, encodedDetail],
-        256,
-      )
-      if (output !== 'ok') throw new Error('OMK returned an unexpected activity-log result')
-    } catch (error) {
-      // Activity history is supplementary and must not turn a completed operation into a failure.
-      console.error('Unable to record WebUI activity:', error)
+  async getPifFingerprintState(): Promise<PifFingerprintState> {
+    const { keymint } = await this.#getHelperPaths()
+    const output = await this.#run(
+      keymint,
+      ['--webui-get-pif-fingerprint-state'],
+      MAX_PIF_STATE_BYTES,
+    )
+    return parsePifState(output)
+  }
+
+  async listPifDevices(): Promise<PifDevice[]> {
+    const { keymint } = await this.#getHelperPaths()
+    const output = await this.#run(
+      keymint,
+      ['--webui-list-pif-devices'],
+      MAX_PIF_CATALOG_BYTES,
+    )
+    const parsed = parseCanonicalJson(output, 'PIF device catalog')
+    if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > MAX_PIF_DEVICES) {
+      throw new Error('OMK returned an invalid PIF device catalog')
     }
+
+    const devices = parsed.map(parsePifDevice)
+    if (new Set(devices.map(device => device.product)).size !== devices.length) {
+      throw new Error('OMK returned duplicate PIF products')
+    }
+    return devices
+  }
+
+  async applyPifFingerprint(product: string): Promise<EnabledPifFingerprintState> {
+    if (!isPifProduct(product)) throw new Error('Invalid PIF product')
+    const { keymint } = await this.#getHelperPaths()
+    const output = await this.#run(
+      keymint,
+      ['--webui-apply-pif-fingerprint', product],
+      MAX_PIF_STATE_BYTES,
+    )
+    const state = parsePifState(output)
+    if (!state.enabled || state.product !== product) {
+      throw new Error('OMK returned an unexpected PIF fingerprint state')
+    }
+    return state
+  }
+
+  async disablePifFingerprint(): Promise<PifFingerprintState> {
+    const { keymint } = await this.#getHelperPaths()
+    const output = await this.#run(
+      keymint,
+      ['--webui-disable-pif-fingerprint'],
+      MAX_PIF_STATE_BYTES,
+    )
+    const state = parsePifState(output)
+    if (state.enabled) throw new Error('OMK did not disable PIF fingerprint spoofing')
+    return state
   }
 
   async #runInject(args: string[]): Promise<string> {
