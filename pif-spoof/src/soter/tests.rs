@@ -752,6 +752,7 @@ fn android_local_binder_round_trip_uses_native_parcels_without_enabling_module()
         assert!(verifies(&expected, json, signature), "native export {code}");
         let value: serde_json::Value = serde_json::from_slice(json).unwrap();
         assert_eq!(value["uid"], "10501");
+        assert_eq!(value["software_test"], true);
     }
     let opened = invoke(9, 0);
     assert_eq!(int32(&opened, 16), 0);
