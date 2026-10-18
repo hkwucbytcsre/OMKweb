@@ -136,7 +136,7 @@ def get_git_commit_hash() -> str:
     )
     if status.returncode != 0:
         raise RuntimeError("Failed to inspect git worktree state")
-    return f"{git_hash}-dirty" if status.stdout.strip() else git_hash
+    return f"{git_hash}-Miyako" if status.stdout.strip() else git_hash
 
 
 def cargo_context_for_target(target: str) -> tuple[dict[str, str], str]:
