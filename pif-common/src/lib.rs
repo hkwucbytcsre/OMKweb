@@ -170,8 +170,12 @@ impl PifProfile {
                 return Err(format!("stored {name} does not match fingerprint"));
             }
         }
-         // 手动替换的 profile 允许任意厂商指纹（非 Google 设备）。
-         // feed 下载路径的 Google/user 强制校验保留在 from_source() 中。
+        if self.manufacturer != "Google" || self.brand != "google" {
+            return Err("stored PIF profile must describe a Google device".to_string());
+        }
+        if self.build_type != "user" || self.tags != "release-keys" {
+            return Err("stored fingerprint must describe a user/release-keys build".to_string());
+        }
         Ok(())
     }
 
@@ -258,10 +262,10 @@ pub fn validate_product(value: &str) -> Result<(), String> {
     let Some(first) = bytes.next() else {
         return Err("product must not be empty".to_string());
     };
-    if !first.is_ascii_alphanumeric() {
-        return Err("product must start with an ASCII letter or digit".to_string());
+    if !first.is_ascii_lowercase() && !first.is_ascii_digit() {
+        return Err("product must start with a lowercase ASCII letter or digit".to_string());
     }
-    if !bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_') {
+    if !bytes.all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_') {
         return Err("product contains an unsupported character".to_string());
     }
     Ok(())
