@@ -26,7 +26,7 @@ const MAX_PIF_DEVICES = 64
 const MAX_PIF_MODEL_LENGTH = 128
 const MAX_PIF_PRODUCT_LENGTH = 128
 const MAX_PIF_FINGERPRINT_LENGTH = 1024
-const PIF_PRODUCT_RE = /^[a-z0-9][a-z0-9_]*$/
+const PIF_PRODUCT_RE = /^[a-zA-Z0-9][a-zA-Z0-9_]*$/
 
 export const MAX_KEYBOX_XML_BYTES = 64 * 1024
 
