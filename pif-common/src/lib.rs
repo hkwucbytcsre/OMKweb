@@ -170,12 +170,8 @@ impl PifProfile {
                 return Err(format!("stored {name} does not match fingerprint"));
             }
         }
-        if self.manufacturer != "Google" || self.brand != "google" {
-            return Err("stored PIF profile must describe a Google device".to_string());
-        }
-        if self.build_type != "user" || self.tags != "release-keys" {
-            return Err("stored fingerprint must describe a user/release-keys build".to_string());
-        }
+         // 手动替换的 profile 允许任意厂商指纹（非 Google 设备）。
+         // feed 下载路径的 Google/user 强制校验保留在 from_source() 中。
         Ok(())
     }
 
