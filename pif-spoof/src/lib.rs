@@ -295,6 +295,7 @@ struct PropertyValues {
     tags: CString,
     security_patch: CString,
     api_level: CString,
+    board_api_level: CString,
 }
 
 impl PropertyValues {
