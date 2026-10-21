@@ -42,8 +42,8 @@ const PROPERTY_FIND_SYMBOL: &CStr = c"__system_property_find";
 const PROPERTY_GET_SYMBOL: &CStr = c"__system_property_get";
 const PROPERTY_READ_LEGACY_SYMBOL: &CStr = c"__system_property_read";
 const PROPERTY_VALUE_MAX: usize = 92;
-+// Google（feed Pixel）指纹使用与 Pixel 身份一致的硬编码值；其他指纹读本机真实值。
-+const BOARD_FIRST_API_LEVEL_GOOGLE: &CStr = c"32";
+// Google（feed Pixel）指纹使用与 Pixel 身份一致的硬编码值；其他指纹读本机真实值。
+const BOARD_FIRST_API_LEVEL_GOOGLE: &CStr = c"32";
 const MAX_CALLBACK_WRAPPER_INSTRUCTIONS: usize = 16;
 const INLINE_PATCH_BYTES: usize = 24;
 const MAX_DISPATCH_SPAN: usize = 32 * 1024 * 1024;
