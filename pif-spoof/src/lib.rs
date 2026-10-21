@@ -42,7 +42,8 @@ const PROPERTY_FIND_SYMBOL: &CStr = c"__system_property_find";
 const PROPERTY_GET_SYMBOL: &CStr = c"__system_property_get";
 const PROPERTY_READ_LEGACY_SYMBOL: &CStr = c"__system_property_read";
 const PROPERTY_VALUE_MAX: usize = 92;
-const BOARD_FIRST_API_LEVEL: &CStr = c"32";
++// Google（feed Pixel）指纹使用与 Pixel 身份一致的硬编码值；其他指纹读本机真实值。
++const BOARD_FIRST_API_LEVEL_GOOGLE: &CStr = c"32";
 const MAX_CALLBACK_WRAPPER_INSTRUCTIONS: usize = 16;
 const INLINE_PATCH_BYTES: usize = 24;
 const MAX_DISPATCH_SPAN: usize = 32 * 1024 * 1024;
@@ -313,6 +314,17 @@ impl PropertyValues {
             tags: property_string("tags", &profile.tags)?,
             security_patch: property_string("security_patch", &profile.security_patch)?,
             api_level: property_string("api_level", &profile.initial_sdk_int().to_string())?,
+             // Google（feed）指纹：保持与 Pixel 身份一致的硬编码；
+             // 本机/其他厂商指纹：在 hook 安装前读取本机真实 ro.board.first_api_level，
+             // 缺失时回退到 device_initial_sdk_int。
+             board_api_level: if profile.manufacturer == "Google" && profile.brand == "google" {
+                 BOARD_FIRST_API_LEVEL_GOOGLE.to_owned()
+             } else {
+                 local_prop_string(c"ro.board.first_api_level").unwrap_or_else(|| {
+                     property_string("board_api_level", &profile.initial_sdk_int().to_string())
+                         .expect("api level is pre-validated")
+                 })
+             },
         })
     }
 
@@ -321,7 +333,7 @@ impl PropertyValues {
             return Some(self.fingerprint.as_c_str());
         }
         if name == b"ro.board.first_api_level" {
-            return Some(BOARD_FIRST_API_LEVEL);
+            return Some(self.board_api_level.as_c_str());
         }
         if name == b"ro.product.first_api_level" {
             return Some(self.api_level.as_c_str());
@@ -364,6 +376,16 @@ impl PropertyValues {
         }
         None
     }
+ }
+ 
+ /// 读取本机真实属性值（必须在任何 hook/property_area 安装之前调用）。
+ fn local_prop_string(name: &CStr) -> Option<CString> {
+     let mut buf = [0u8; PROPERTY_VALUE_MAX + 1];
+     let len = unsafe { libc::__system_property_get(name.as_ptr(), buf.as_mut_ptr().cast()) };
+     if len <= 0 {
+         return None;
+     }
+     CString::new(&buf[..len as usize]).ok()
 }
 
 fn property_string(name: &str, value: &str) -> Result<CString, String> {
