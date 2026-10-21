@@ -258,10 +258,10 @@ pub fn validate_product(value: &str) -> Result<(), String> {
     let Some(first) = bytes.next() else {
         return Err("product must not be empty".to_string());
     };
-    if !first.is_ascii_lowercase() && !first.is_ascii_digit() {
-        return Err("product must start with a lowercase ASCII letter or digit".to_string());
+    if !first.is_ascii_alphanumeric() {
+        return Err("product must start with an ASCII letter or digit".to_string());
     }
-    if !bytes.all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_') {
+    if !bytes.all(|byte| byte.is_ascii_alphanumeric() || byte == b'_') {
         return Err("product contains an unsupported character".to_string());
     }
     Ok(())
