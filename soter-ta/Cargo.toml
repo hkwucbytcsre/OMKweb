@@ -26,4 +26,4 @@ reqwest = { version = "0.12", default-features = false, features = ["blocking", 
 libc = "0.2.189"
 log = "0.4.34"
 android_logger = "0.15.1"
-rsbinder = { version = "0.10.0", features = ["android_12_plus"] }
+rsbinder = { version = "0.12.0", features = ["android_12_plus"] }
